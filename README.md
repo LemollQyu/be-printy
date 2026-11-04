@@ -4,16 +4,16 @@ Backend service untuk **Printy**, dibangun dengan Go menggunakan framework [Gin]
 
 ## Tech Stack
 
-| Kebutuhan        | Library                                   |
-| ---------------- | ----------------------------------------- |
-| Bahasa           | Go 1.27.3                                 |
-| HTTP Framework   | `github.com/gin-gonic/gin` v1.12.0        |
-| ORM              | `gorm.io/gorm` v1.31.2                    |
-| Database Driver  | `gorm.io/driver/postgres` v1.6.3          |
-| Cache            | `github.com/redis/go-redis/v9` v9.23.0    |
-| Config           | `github.com/spf13/viper` v1.21.0          |
-| Logger           | `github.com/sirupsen/logrus` v1.10.2      |
-| UUID (Request ID)| `github.com/google/uuid` v1.6.0           |
+| Kebutuhan         | Library                                |
+| ----------------- | -------------------------------------- |
+| Bahasa            | Go 1.27.3                              |
+| HTTP Framework    | `github.com/gin-gonic/gin` v1.12.0     |
+| ORM               | `gorm.io/gorm` v1.31.2                 |
+| Database Driver   | `gorm.io/driver/postgres` v1.6.3       |
+| Cache             | `github.com/redis/go-redis/v9` v9.23.0 |
+| Config            | `github.com/spf13/viper` v1.21.0       |
+| Logger            | `github.com/sirupsen/logrus` v1.10.2   |
+| UUID (Request ID) | `github.com/google/uuid` v1.6.0        |
 
 ## Struktur Project
 
@@ -126,4 +126,4 @@ go test ./...
 
 ## Lisensi
 
-Tentukan lisensi project di sini (mis. MIT).
+lisensi MIT

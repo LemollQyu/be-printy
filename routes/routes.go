@@ -11,4 +11,5 @@ func SetupRoutes(router *gin.Engine, printyHandler handler.PrintyHandler) {
 
 	groupV1 := router.Group("/api/v1")
 	groupV1.GET("/test", printyHandler.Test)
+	groupV1.POST("/register", printyHandler.Register)
 }
