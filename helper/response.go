@@ -1,18 +1,15 @@
 package helper
 
 import (
-	"errors"
 	"math"
 	"net/http"
 	"time"
 
-	herr "github.com/LemollQyu/be-printy/helper/error"
-	"github.com/LemollQyu/be-printy/infrastructure/log"
 	"github.com/LemollQyu/be-printy/models"
 	"github.com/gin-gonic/gin"
 )
 
-// Kode error teks (untuk mesin/frontend)
+// Machine-readable error codes
 const (
 	CodeBadRequest   = "BAD_REQUEST"
 	CodeValidation   = "VALIDATION_ERROR"
@@ -26,12 +23,14 @@ const (
 
 func newMeta(c *gin.Context) models.Meta {
 	return models.Meta{
-		RequestID: c.GetString(RequestIDKey),
+		RequestID: c.GetString(RequestIDKey), // set by RequestLogger middleware
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 	}
 }
 
-// ---------- Success ----------
+// =========================
+// Success
+// =========================
 
 func Success(c *gin.Context, status int, message string, data interface{}) {
 	c.JSON(status, models.Response{
@@ -43,18 +42,22 @@ func Success(c *gin.Context, status int, message string, data interface{}) {
 	})
 }
 
+// 200
 func OK(c *gin.Context, message string, data interface{}) {
-	Success(c, http.StatusOK, message, data) // 200
+	Success(c, http.StatusOK, message, data)
 }
 
+// 201
 func Created(c *gin.Context, message string, data interface{}) {
-	Success(c, http.StatusCreated, message, data) // 201
+	Success(c, http.StatusCreated, message, data)
 }
 
+// 200 without data (delete / action endpoints)
 func NoContent(c *gin.Context, message string) {
-	Success(c, http.StatusOK, message, nil) // 200 tanpa data
+	Success(c, http.StatusOK, message, nil)
 }
 
+// 200 with pagination info in meta
 func Paginated(c *gin.Context, message string, data interface{}, page, perPage int, total int64) {
 	totalPages := 0
 	if perPage > 0 {
@@ -80,7 +83,9 @@ func Paginated(c *gin.Context, message string, data interface{}, page, perPage i
 	})
 }
 
-// ---------- Error ----------
+// =========================
+// Error
+// =========================
 
 func Error(c *gin.Context, status int, code, message string, details map[string]string) {
 	c.JSON(status, models.Response{
@@ -92,63 +97,42 @@ func Error(c *gin.Context, status int, code, message string, details map[string]
 	})
 }
 
+// 400
 func BadRequest(c *gin.Context, message string, details map[string]string) {
-	Error(c, http.StatusBadRequest, CodeBadRequest, message, details) // 400
+	Error(c, http.StatusBadRequest, CodeBadRequest, message, details)
 }
 
-// Validasi sekarang 400 (bukan 422), tapi kode teksnya tetap VALIDATION_ERROR
-// supaya frontend bisa membedakan dari BAD_REQUEST biasa.
+// 400 (validation failures, distinguished by the VALIDATION_ERROR code)
 func ValidationError(c *gin.Context, details map[string]string) {
-	Error(c, http.StatusBadRequest, CodeValidation, "Validation failed", details) // 400
+	Error(c, http.StatusBadRequest, CodeValidation, "Validation failed", details)
 }
 
+// 401
 func Unauthorized(c *gin.Context, message string) {
-	Error(c, http.StatusUnauthorized, CodeUnauthorized, message, nil) // 401
+	Error(c, http.StatusUnauthorized, CodeUnauthorized, message, nil)
 }
 
+// 403
 func Forbidden(c *gin.Context, message string) {
-	Error(c, http.StatusForbidden, CodeForbidden, message, nil) // 403
+	Error(c, http.StatusForbidden, CodeForbidden, message, nil)
 }
 
+// 404
 func NotFound(c *gin.Context, message string) {
-	Error(c, http.StatusNotFound, CodeNotFound, message, nil) // 404
+	Error(c, http.StatusNotFound, CodeNotFound, message, nil)
 }
 
+// 409
 func Conflict(c *gin.Context, message string) {
-	Error(c, http.StatusConflict, CodeConflict, message, nil) // 409
+	Error(c, http.StatusConflict, CodeConflict, message, nil)
 }
 
+// 429
 func TooManyRequests(c *gin.Context) {
-	Error(c, http.StatusTooManyRequests, CodeTooManyReq, "Too many requests, try again later", nil) // 429
+	Error(c, http.StatusTooManyRequests, CodeTooManyReq, "Too many requests, please try again later", nil)
 }
 
+// 500: never send error details to the client, just log them on the server.
 func InternalError(c *gin.Context) {
-	Error(c, http.StatusInternalServerError, CodeInternal, "A server error occurred", nil) // 500
-}
-
-// ---------- Error handler terpusat ----------
-
-type errRule struct {
-	err    error
-	status int
-	code   string
-}
-
-var errRules = []errRule{
-	{herr.ErrPasswordRequired, http.StatusBadRequest, CodeBadRequest},
-	{herr.ErrEmailExist, http.StatusConflict, CodeConflict},
-	{herr.ErrPhoneExist, http.StatusConflict, CodeConflict},
-	// {herr.ErrUserNotFound, http.StatusNotFound, CodeNotFound},
-	// {herr.ErrInvalidCredentials, http.StatusUnauthorized, CodeUnauthorized},
-}
-
-func HandleError(c *gin.Context, err error) {
-	for _, r := range errRules {
-		if errors.Is(err, r.err) {
-			Error(c, r.status, r.code, r.err.Error(), nil)
-			return
-		}
-	}
-	log.Logger.Error("Unhandled error: ", err.Error())
-	InternalError(c)
+	Error(c, http.StatusInternalServerError, CodeInternal, "An internal server error occurred", nil)
 }

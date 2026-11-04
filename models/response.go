@@ -16,12 +16,12 @@ type Meta struct {
 }
 
 type ErrorDetail struct {
-	Code    string            `json:"code"` // kode teks untuk mesin, contoh: VALIDATION_ERROR
+	Code    string            `json:"code"` // machine-readable, e.g. VALIDATION_ERROR
 	Details map[string]string `json:"details,omitempty"`
 }
 
 type Response struct {
-	Status  int          `json:"status"` // nomor HTTP status, contoh: 200, 400
+	Status  int          `json:"status"` // HTTP status number, e.g. 200, 400
 	Success bool         `json:"success"`
 	Message string       `json:"message"`
 	Data    interface{}  `json:"data,omitempty"`
