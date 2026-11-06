@@ -2,11 +2,16 @@ package usecase
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/LemollQyu/be-printy/helper"
 	herr "github.com/LemollQyu/be-printy/helper/error"
 	"github.com/LemollQyu/be-printy/infrastructure/log"
 	models "github.com/LemollQyu/be-printy/models/authentikasi"
+	"github.com/LemollQyu/be-printy/utils"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -20,6 +25,8 @@ func (uc *PrintyUsecase) InsertUser(ctx context.Context, user *models.User) (uui
 		}).Errorf("uc.PrintyService.GetUserByEmail got error %v", err)
 		return uuid.Nil, err
 	}
+
+	user.Email = strings.ToLower(strings.TrimSpace(user.Email))
 
 	if userEmail != nil {
 		return uuid.Nil, herr.ErrEmailExist
@@ -63,5 +70,155 @@ func (uc *PrintyUsecase) InsertUser(ctx context.Context, user *models.User) (uui
 		return uuid.Nil, err
 	}
 
+	// buat token verifikasi
+	rawToken, err := uc.createVerifyToken(ctx, id)
+	if err != nil {
+		log.Logger.WithFields(logrus.Fields{
+			"user_id": id,
+		}).Errorf("uc.createVerifyToken got error %v", err)
+		return id, nil // user sudah tersimpan, nanti bisa kirim ulang
+	}
+
+	// kirim email di background supaya register tidak menunggu SMTP
+	email, fullName := user.Email, user.FullName
+	go func() {
+		if err := uc.sendVerifyEmail(context.Background(), email, fullName, rawToken); err != nil {
+			log.Logger.WithFields(logrus.Fields{
+				"email": email,
+			}).Errorf("uc.sendVerifyEmail got error %v", err)
+		}
+	}()
+
 	return id, nil
+}
+
+// send again verify account
+func (uc *PrintyUsecase) SendTokenVerifyAccount(ctx context.Context, email string) error {
+	email = strings.ToLower(strings.TrimSpace(email))
+
+	user, err := uc.PrintyService.GetUserByEmail(ctx, email)
+	if err != nil {
+		log.Logger.Errorf("uc.PrintyService.GetUserByEmail got error %v", err)
+		return err
+	}
+
+	// user tidak ditemukan -> return nil (jangan bocorkan status email)
+	if user == nil {
+		return herr.ErrUserNotFound
+	}
+
+	// check user sudah terverifikasi belum
+	if user.IsEmailVerified {
+		return herr.ErrAccountIsVerified
+	}
+
+	// cooldown, cegah spam kirim email
+	lastToken, err := uc.PrintyService.GetLatestVerifyTokenByUserID(ctx, user.ID)
+	if err != nil {
+		log.Logger.Errorf("uc.PrintyService.GetLatestVerifyTokenByUserID got error %v", err)
+		return err
+	}
+	if lastToken != nil && time.Since(lastToken.CreatedAt) < time.Minute {
+		return herr.ErrTooManyRequests
+	}
+
+	// hanguskan token lama yang belum dipakai
+	if err := uc.PrintyService.InvalidateVerifyTokens(ctx, user.ID); err != nil {
+		log.Logger.Errorf("uc.PrintyService.InvalidateVerifyTokens got error %v", err)
+		return err
+	}
+
+	// buat token baru (hash disimpan di DB, raw dikirim ke email)
+	rawToken, err := uc.createVerifyToken(ctx, user.ID)
+	if err != nil {
+		log.Logger.Errorf("uc.createVerifyToken got error %v", err)
+		return err
+	}
+
+	// sinkron, supaya user tahu kalau pengiriman gagal
+	if err := uc.sendVerifyEmail(ctx, user.Email, user.FullName, rawToken); err != nil {
+		log.Logger.Errorf("uc.sendVerifyEmail got error %v", err)
+		return err
+	}
+
+	return nil
+}
+
+// buat token baru, simpan hash-nya, kembalikan raw token
+func (uc *PrintyUsecase) createVerifyToken(ctx context.Context, userID uuid.UUID) (string, error) {
+	rawToken, tokenHash, err := helper.GenerateToken()
+	if err != nil {
+		return "", fmt.Errorf("generate token: %w", err)
+	}
+
+	_, err = uc.PrintyService.InsertVerifyToken(ctx, models.EmailVerificationToken{
+		UserID:    userID,
+		TokenHash: tokenHash,
+		ExpiredAt: time.Now().Add(utils.VerifyTokenTTL),
+	})
+	if err != nil {
+		return "", fmt.Errorf("insert verify token: %w", err)
+	}
+
+	return rawToken, nil
+}
+
+// render template + kirim email verifikasi
+func (uc *PrintyUsecase) sendVerifyEmail(ctx context.Context, email, fullName, rawToken string) error {
+	content, err := utils.BuildVerifyAccountEmail(fullName, uc.ConfigApp.BaseUrl, rawToken)
+	if err != nil {
+		return err
+	}
+
+	return uc.PrintyService.SendEmail(ctx, models.EmailParameter{
+		To:      email,
+		Subject: content.Subject,
+		Body:    content.Body,
+	})
+}
+
+// verify account
+func (uc *PrintyUsecase) VerifyAccount(ctx context.Context, rawToken string) error {
+	tokenHash := helper.HashToken(rawToken)
+
+	verifyToken, err := uc.PrintyService.GetVerifyTokenByHash(ctx, tokenHash)
+	if err != nil {
+		log.Logger.Errorf("uc.PrintyService.GetVerifyTokenByHash got error %v", err)
+		return err
+	}
+	if verifyToken == nil {
+		return herr.ErrInvalidToken
+	}
+
+	if verifyToken.UsedAt != nil {
+		return herr.ErrTokenUsed
+	}
+
+	if time.Now().After(verifyToken.ExpiredAt) {
+		return herr.ErrTokenExpired
+	}
+
+	user, err := uc.PrintyService.GetUserByID(ctx, verifyToken.UserID)
+	if err != nil {
+		log.Logger.Errorf("uc.PrintyService.GetUserByID got error %v", err)
+		return err
+	}
+	if user == nil {
+		return herr.ErrInvalidToken
+	}
+
+	// sudah verified? anggap sukses
+	if user.IsEmailVerified {
+		return nil
+	}
+
+	// tandai token + verify akun dalam satu transaksi
+	if err := uc.PrintyService.VerifyAccountTx(ctx, verifyToken.ID, user.ID); err != nil {
+		if !errors.Is(err, herr.ErrTokenUsed) {
+			log.Logger.Errorf("uc.PrintyService.VerifyAccountTx got error %v", err)
+		}
+		return err
+	}
+
+	return nil
 }

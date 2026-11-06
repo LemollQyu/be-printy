@@ -26,8 +26,27 @@ type User struct {
 	UpdatedAt       time.Time `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
 }
 
+type EmailVerificationToken struct {
+	ID        uuid.UUID  `json:"id" gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()"`
+	UserID    uuid.UUID  `json:"user_id" gorm:"column:user_id;type:uuid;not null;index:idx_email_verification_tokens_user_id"`
+	TokenHash string     `json:"-" gorm:"column:token_hash;type:varchar(255);unique;not null"`
+	UsedAt    *time.Time `json:"used_at" gorm:"column:used_at;type:timestamptz"`
+	ExpiredAt time.Time  `json:"expired_at" gorm:"column:expired_at;type:timestamptz;not null"`
+	CreatedAt time.Time  `json:"created_at" gorm:"column:created_at;type:timestamptz;autoCreateTime"`
+
+	User User `json:"-" gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE"`
+}
+
+func (EmailVerificationToken) TableName() string {
+	return "email_verification_tokens"
+}
+
 func (User) TableName() string {
 	return "users"
+}
+
+type ResendVerifyRequest struct {
+	Email string `json:"email" binding:"required,email"`
 }
 
 type RegisterParameter struct {

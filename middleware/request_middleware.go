@@ -19,7 +19,7 @@ import (
 const maxLogPayload = 2048
 
 var sensitiveRe = regexp.MustCompile(
-	`(?i)("(?:password|current_password|new_password|token|access_token|refresh_token|secret|otp|pin)"\s*:\s*)"[^"]*"`,
+	`(?i)("(?:password|current_password|new_password|token|confirm_password|access_token|refresh_token|secret|otp|pin)"\s*:\s*)"[^"]*"`,
 )
 
 type limitedWriter struct {

@@ -24,19 +24,22 @@ func main() {
 	fmt.Println("APP CONFIG:", cfg.App)
 	fmt.Println("DATABASE CONFIG:", cfg.Database)
 	fmt.Println("REDIS CONFIG:", cfg.Redis)
+	fmt.Println("EMAIL CONFIG:", cfg.Email)
 
 	db := resource.InitDB(&cfg)
 	redis := resource.InitRedis(&cfg)
 	log.SetupLogger()
 
 	printyRepository := repository.NewPrintyRepository(db, redis)
-	printyService := service.NewPrintyService(*printyRepository)
-	printyUsecase := usecase.NewPrintyUsecase(*printyService)
-	printyHandler := handler.NewPrintyHandler(*printyUsecase)
+	printyService := service.NewPrintyService(*printyRepository, cfg.Email)
+	printyUsecase := usecase.NewPrintyUsecase(*printyService, cfg.App)
+	printyHandler := handler.NewPrintyHandler(*printyUsecase, cfg.App)
 
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
+
+	router.Static("/public", "./public")
 
 	routes.SetupRoutes(router, *printyHandler)
 	log.Logger.Printf("HTTP server running on port : %s", port)

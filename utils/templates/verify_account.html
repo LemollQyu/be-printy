@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id" style="color-scheme:light only;supported-color-schemes:light only;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>Verifikasi Akun - Printy</title>
+<style>
+  :root{color-scheme:light only;supported-color-schemes:light only;}
+  body{margin:0;padding:0;background:#d3dfcc;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}
+  img{border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;}
+  table{border-collapse:collapse;}
+  a{text-decoration:none;}
+
+  /* ---------- RESPONSIVE ---------- */
+  @media only screen and (max-width:480px){
+    .title{font-size:30px !important;line-height:34px !important;margin-bottom:10px !important;}
+    .desc{font-size:15px !important;line-height:23px !important;margin-bottom:22px !important;max-width:100% !important;}
+    .btn-cell{padding:5px !important;border-radius:14px !important;}
+    .btn-link{font-size:16px !important;line-height:20px !important;padding:15px 6px !important;border-radius:10px !important;}
+  }
+  @media only screen and (max-width:360px){
+    .title{font-size:26px !important;line-height:30px !important;}
+    .desc{font-size:14px !important;line-height:21px !important;}
+    .btn-link{font-size:15px !important;padding:14px 4px !important;}
+  }
+
+  /* ---------- DARK MODE: kunci warna asli ---------- */
+  /* Apple Mail, Outlook.com (web), client yang mendukung prefers-color-scheme */
+  @media (prefers-color-scheme: dark){
+    body,.bg-outer{background:#d3dfcc !important;}
+    .bg-mid{background-color:#f3ecd4 !important;}
+    .title{color:#0d3d2b !important;}
+    .desc{color:#55553f !important;}
+    .btn-cell{background-color:#0b6b47 !important;}
+    .btn-link{color:#ffffff !important;border-color:#6fa88f !important;}
+  }
+  /* Outlook.com / Outlook app */
+  [data-ogsc] .title{color:#0d3d2b !important;}
+  [data-ogsc] .desc{color:#55553f !important;}
+  [data-ogsc] .btn-link{color:#ffffff !important;}
+  [data-ogsb] .bg-mid{background-color:#f3ecd4 !important;}
+  [data-ogsb] .btn-cell{background-color:#0b6b47 !important;}
+</style>
+</head>
+<body class="bg-outer" style="margin:0;padding:0;background:#d3dfcc;">
+
+<!-- PREHEADER -->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">
+  Verifikasi email Anda untuk mengaktifkan akun Printy.
+</div>
+
+<table class="bg-outer" width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" bgcolor="#d3dfcc"
+       style="background:#d3dfcc;background-image:linear-gradient(#d3dfcc,#d3dfcc);">
+<tr><td align="center">
+
+  <table width="600" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;max-width:600px;">
+
+    <!-- TOP: bingkai, logo, daun, amplop (gambar) -->
+    <tr>
+      <td style="font-size:0;line-height:0;">
+        <img src="{{.AssetURL}}/top.webp" width="600" alt="Printy - Cetak Semua Ide, Jadi Nyata"
+             style="display:block;width:100%;max-width:600px;height:auto;">
+      </td>
+    </tr>
+
+    <!-- MIDDLE: teks asli + tombol -->
+    <tr>
+      <td class="bg-mid" bgcolor="#f3ecd4" background="{{.AssetURL}}/mid.webp"
+          style="background-color:#f3ecd4;background-image:url('{{.AssetURL}}/mid.webp');background-repeat:repeat-y;background-size:100% auto;background-position:top center;">
+
+        <table cellpadding="0" cellspacing="0" border="0" role="presentation"
+               style="width:74.7%;margin-left:13.3%;">
+          <tr>
+            <!-- gradient = trik agar Gmail dark mode tidak membalik warna di area ini -->
+            <td align="center" style="padding:12px 0 16px;background-image:linear-gradient(rgba(243,236,212,0),rgba(243,236,212,0));">
+
+              <h1 class="title" style="margin:0 0 14px;font-family:Georgia,'Times New Roman',serif;font-size:44px;line-height:48px;font-weight:bold;color:#0d3d2b;">
+                Verifikasi Akun
+              </h1>
+
+              <p class="desc" style="margin:0 auto 30px;max-width:300px;font-family:Georgia,'Times New Roman',serif;font-size:18px;line-height:28px;color:#55553f;">
+                Klik tombol di bawah untuk mengaktifkan akun Anda.
+              </p>
+
+              <!-- BUTTON -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+                <tr>
+                  <td class="btn-cell" align="center" bgcolor="#0b6b47"
+                      style="background-color:#0b6b47;background-image:linear-gradient(#0b6b47,#0b6b47);border-radius:18px;padding:6px;">
+                    <a class="btn-link" href="{{.Link}}" target="_blank"
+                       style="display:block;border:1px dashed #6fa88f;border-radius:13px;padding:17px 10px;font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:24px;font-weight:bold;color:#ffffff;text-decoration:none;">
+                      <span style="color:#ffffff;">Verifikasi Akun &nbsp;&rarr;</span>
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+
+    <!-- BOTTOM: divider, slogan, daun, footer (gambar) -->
+    <tr>
+      <td style="font-size:0;line-height:0;">
+        <img src="{{.AssetURL}}/bottom.webp" width="600" alt="Good Prints Create Brighter Days. © Printy. Email otomatis, mohon tidak membalas."
+             style="display:block;width:100%;max-width:600px;height:auto;">
+      </td>
+    </tr>
+
+  </table>
+
+</td></tr>
+</table>
+
+</body>
+</html>

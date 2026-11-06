@@ -9,7 +9,11 @@ import (
 func SetupRoutes(router *gin.Engine, printyHandler handler.PrintyHandler) {
 	router.Use(middleware.RequestLogger())
 
+	linkGroup := router.Group("/i")
+	linkGroup.GET("/verify-email", printyHandler.VerifyAccountToken)
+
 	groupV1 := router.Group("/api/v1")
 	groupV1.GET("/test", printyHandler.Test)
 	groupV1.POST("/register", printyHandler.Register)
+	groupV1.POST("/resend-verification", printyHandler.SendTokenVerifyAccount)
 }
