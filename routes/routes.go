@@ -13,7 +13,17 @@ func SetupRoutes(router *gin.Engine, printyHandler handler.PrintyHandler) {
 	linkGroup.GET("/verify-email", printyHandler.VerifyAccountToken)
 
 	groupV1 := router.Group("/api/v1")
+
+	// ---------- publik ----------
 	groupV1.GET("/test", printyHandler.Test)
 	groupV1.POST("/register", printyHandler.Register)
 	groupV1.POST("/resend-verification", printyHandler.SendTokenVerifyAccount)
+	groupV1.POST("/login", printyHandler.Login)
+
+	// ---------- butuh token ----------
+	protected := groupV1.Group("")
+	protected.Use(middleware.AuthMiddleware(printyHandler.PrintyUsecase.ValidateSession))
+	{
+		protected.GET("/me", printyHandler.Me)
+	}
 }

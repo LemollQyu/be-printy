@@ -37,12 +37,28 @@ type EmailVerificationToken struct {
 	User User `json:"-" gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE"`
 }
 
+type Session struct {
+	ID        uuid.UUID `json:"id" gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()"`
+	UserID    uuid.UUID `json:"user_id" gorm:"column:user_id;type:uuid;not null;index:idx_sessions_user_id"`
+	TokenHash string    `json:"-" gorm:"column:token_hash;type:varchar(255);uniqueIndex;not null"`
+	IPAddress *string   `json:"ip_address" gorm:"column:ip_address;type:inet"`
+	UserAgent *string   `json:"user_agent" gorm:"column:user_agent;type:text"`
+	ExpiresAt time.Time `json:"expires_at" gorm:"column:expires_at;type:timestamptz;not null"`
+	CreatedAt time.Time `json:"created_at" gorm:"column:created_at;type:timestamptz;not null;autoCreateTime"`
+
+	User User `json:"-" gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE"`
+}
+
 func (EmailVerificationToken) TableName() string {
 	return "email_verification_tokens"
 }
 
 func (User) TableName() string {
 	return "users"
+}
+
+func (Session) TableName() string {
+	return "sessions"
 }
 
 type ResendVerifyRequest struct {
@@ -55,4 +71,11 @@ type RegisterParameter struct {
 	Phone           string `json:"phone" binding:"required,numeric,min=9,max=15"`
 	Password        string `json:"password" binding:"required,min=8,max=72"`
 	ConfirmPassword string `json:"confirm_password" binding:"required,eqfield=Password"`
+}
+type LoginParameter struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+
+	IPAddress string `json:"-"`
+	UserAgent string `json:"-"`
 }

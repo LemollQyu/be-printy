@@ -160,3 +160,15 @@ func (svc *PrintyService) InvalidateVerifyTokens(ctx context.Context, userID uui
 
 	return nil
 }
+
+func (svc *PrintyService) CreateSession(ctx context.Context, session *models.Session) error {
+	if err := svc.PrintyRepositry.InsertSession(ctx, session); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (svc *PrintyService) GetActiveSession(ctx context.Context, tokenHash string) (*models.Session, error) {
+	return svc.PrintyRepositry.FindActiveSessionByTokenHash(ctx, tokenHash)
+}

@@ -71,7 +71,7 @@ func (uc *PrintyUsecase) InsertUser(ctx context.Context, user *models.User) (uui
 	}
 
 	// buat token verifikasi
-	rawToken, err := uc.createVerifyToken(ctx, id)
+	rawToken, err := uc.CreateVerifyToken(ctx, id)
 	if err != nil {
 		log.Logger.WithFields(logrus.Fields{
 			"user_id": id,
@@ -82,10 +82,10 @@ func (uc *PrintyUsecase) InsertUser(ctx context.Context, user *models.User) (uui
 	// kirim email di background supaya register tidak menunggu SMTP
 	email, fullName := user.Email, user.FullName
 	go func() {
-		if err := uc.sendVerifyEmail(context.Background(), email, fullName, rawToken); err != nil {
+		if err := uc.SendVerifyEmail(context.Background(), email, fullName, rawToken); err != nil {
 			log.Logger.WithFields(logrus.Fields{
 				"email": email,
-			}).Errorf("uc.sendVerifyEmail got error %v", err)
+			}).Errorf("uc.SendVerifyEmail got error %v", err)
 		}
 	}()
 
@@ -129,15 +129,15 @@ func (uc *PrintyUsecase) SendTokenVerifyAccount(ctx context.Context, email strin
 	}
 
 	// buat token baru (hash disimpan di DB, raw dikirim ke email)
-	rawToken, err := uc.createVerifyToken(ctx, user.ID)
+	rawToken, err := uc.CreateVerifyToken(ctx, user.ID)
 	if err != nil {
 		log.Logger.Errorf("uc.createVerifyToken got error %v", err)
 		return err
 	}
 
 	// sinkron, supaya user tahu kalau pengiriman gagal
-	if err := uc.sendVerifyEmail(ctx, user.Email, user.FullName, rawToken); err != nil {
-		log.Logger.Errorf("uc.sendVerifyEmail got error %v", err)
+	if err := uc.SendVerifyEmail(ctx, user.Email, user.FullName, rawToken); err != nil {
+		log.Logger.Errorf("uc.SendVerifyEmail got error %v", err)
 		return err
 	}
 
@@ -145,7 +145,7 @@ func (uc *PrintyUsecase) SendTokenVerifyAccount(ctx context.Context, email strin
 }
 
 // buat token baru, simpan hash-nya, kembalikan raw token
-func (uc *PrintyUsecase) createVerifyToken(ctx context.Context, userID uuid.UUID) (string, error) {
+func (uc *PrintyUsecase) CreateVerifyToken(ctx context.Context, userID uuid.UUID) (string, error) {
 	rawToken, tokenHash, err := helper.GenerateToken()
 	if err != nil {
 		return "", fmt.Errorf("generate token: %w", err)
@@ -164,7 +164,7 @@ func (uc *PrintyUsecase) createVerifyToken(ctx context.Context, userID uuid.UUID
 }
 
 // render template + kirim email verifikasi
-func (uc *PrintyUsecase) sendVerifyEmail(ctx context.Context, email, fullName, rawToken string) error {
+func (uc *PrintyUsecase) SendVerifyEmail(ctx context.Context, email, fullName, rawToken string) error {
 	content, err := utils.BuildVerifyAccountEmail(fullName, uc.ConfigApp.BaseUrl, rawToken)
 	if err != nil {
 		return err
@@ -221,4 +221,84 @@ func (uc *PrintyUsecase) VerifyAccount(ctx context.Context, rawToken string) err
 	}
 
 	return nil
+}
+
+// signin
+func (uc *PrintyUsecase) Signin(ctx context.Context, param *models.LoginParameter) (string, error) {
+	userEmail, err := uc.PrintyService.GetUserByEmail(ctx, param.Email)
+	if err != nil {
+		log.Logger.WithFields(logrus.Fields{
+			"email": param.Email,
+		}).Errorf("uc.PrintyService.GetUserByEmail got error %v", err)
+		return "", err
+	}
+
+	// user tidak ada, atau tidak punya password
+	if userEmail == nil || userEmail.PasswordHash == nil {
+		return "", herr.ErrUserSigninWrong
+	}
+
+	isPassword, err := helper.CheckPasswordHash(param.Password, *userEmail.PasswordHash)
+	if err != nil {
+		log.Logger.Errorf("helper.CheckPasswordHash got error %v", err)
+		return "", err
+	}
+
+	// password salah
+	if !isPassword {
+		return "", herr.ErrUserSigninWrong
+	}
+
+	// check user verified
+	if !userEmail.IsEmailVerified {
+		return "", herr.ErrAccountNotVerified
+	}
+
+	// generate token session (raw dikirim ke client, hash disimpan di DB)
+	rawToken, tokenHash, err := helper.GenerateSessionToken()
+	if err != nil {
+		log.Logger.Errorf("helper.GenerateSessionToken got error %v", err)
+		return "", err
+	}
+
+	session := &models.Session{
+		UserID:    userEmail.ID,
+		TokenHash: tokenHash,
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+	if param.IPAddress != "" {
+		session.IPAddress = &param.IPAddress
+	}
+	if param.UserAgent != "" {
+		session.UserAgent = &param.UserAgent
+	}
+
+	if err := uc.PrintyService.CreateSession(ctx, session); err != nil {
+		log.Logger.WithFields(logrus.Fields{
+			"user_id": userEmail.ID,
+		}).Errorf("uc.PrintyService.CreateSession got error %v", err)
+		return "", err
+	}
+
+	return rawToken, nil
+
+}
+
+func (uc *PrintyUsecase) ValidateSession(ctx context.Context, rawToken string) (*models.User, error) {
+	if !helper.IsValidSessionTokenFormat(rawToken) {
+		return nil, herr.ErrUnauthorized
+	}
+
+	session, err := uc.PrintyService.GetActiveSession(ctx, helper.HashToken(rawToken))
+	if err != nil {
+		log.Logger.Errorf("uc.PrintyService.GetActiveSession got error %v", err)
+		return nil, err
+	}
+
+	// token tidak ada atau sudah expired
+	if session == nil {
+		return nil, herr.ErrUnauthorized
+	}
+
+	return &session.User, nil
 }

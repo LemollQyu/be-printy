@@ -170,3 +170,24 @@ func (r *PrintyRepository) InvalidateVerifyTokens(ctx context.Context, userID uu
 		Where("user_id = ? AND used_at IS NULL", userID).
 		Update("used_at", time.Now()).Error
 }
+
+func (r *PrintyRepository) InsertSession(ctx context.Context, session *models.Session) error {
+	return r.Database.WithContext(ctx).Omit("User").Create(session).Error
+}
+
+func (r *PrintyRepository) FindActiveSessionByTokenHash(ctx context.Context, tokenHash string) (*models.Session, error) {
+	var session models.Session
+
+	err := r.Database.WithContext(ctx).
+		Preload("User").
+		Where("token_hash = ? AND expires_at > ?", tokenHash, time.Now()).
+		First(&session).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &session, nil
+}
