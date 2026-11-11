@@ -109,7 +109,6 @@ func (h *PrintyHandler) SendTokenVerifyAccount(c *gin.Context) {
 }
 
 // lupa password
-
 func (h *PrintyHandler) ForgotPassword(c *gin.Context) {
 	var param models.ForgotPasswordParam
 
