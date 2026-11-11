@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id" style="color-scheme:light only;supported-color-schemes:light only;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>Kode OTP - Printy</title>
+<style>
+  :root{color-scheme:light only;supported-color-schemes:light only;}
+  body{margin:0;padding:0;background:#d4e0c5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}
+  img{border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;}
+  table{border-collapse:collapse;}
+
+  /* Bingkai buku mengecil mengikuti lebar layar (600px -> ~360px),
+     jadi teks & jarak ikut mengecil bertahap supaya proporsinya tetap. */
+  @media only screen and (max-width:520px){
+    .title{font-size:34px !important;line-height:38px !important;margin-bottom:10px !important;}
+    .desc{font-size:15px !important;line-height:22px !important;max-width:100% !important;margin-bottom:18px !important;}
+    .otp{font-size:32px !important;line-height:40px !important;letter-spacing:7px !important;}
+    .otp-cell{padding:6px !important;}
+    .otp-dash{padding:9px 2px !important;}
+    .expiry-wrap{margin-top:18px !important;}
+    .expiry-label{font-size:14px !important;line-height:20px !important;}
+    .expiry{font-size:16px !important;line-height:22px !important;padding:4px 12px !important;}
+    .div-pad{padding:16px 0 12px !important;}
+    .star{font-size:16px !important;line-height:16px !important;}
+    .note{font-size:13px !important;line-height:19px !important;max-width:100% !important;}
+  }
+  @media only screen and (max-width:420px){
+    .title{font-size:28px !important;line-height:32px !important;margin-bottom:8px !important;}
+    .desc{font-size:13.5px !important;line-height:20px !important;margin-bottom:14px !important;}
+    .otp{font-size:26px !important;line-height:34px !important;letter-spacing:4px !important;}
+    .otp-cell{padding:5px !important;}
+    .otp-dash{padding:7px 2px !important;}
+    .expiry-wrap{margin-top:14px !important;}
+    .expiry-label{font-size:12.5px !important;line-height:18px !important;}
+    .expiry{font-size:14px !important;line-height:20px !important;padding:3px 10px !important;}
+    .div-pad{padding:12px 0 10px !important;}
+    .star{font-size:14px !important;line-height:14px !important;}
+    .note{font-size:12px !important;line-height:18px !important;}
+  }
+  @media only screen and (max-width:360px){
+    .title{font-size:25px !important;line-height:29px !important;}
+    .desc{font-size:12.5px !important;line-height:19px !important;}
+    .otp{font-size:23px !important;line-height:30px !important;letter-spacing:3px !important;}
+    .expiry-label{font-size:12px !important;}
+    .expiry{font-size:13px !important;line-height:18px !important;}
+    .note{font-size:11.5px !important;line-height:17px !important;}
+  }
+
+  @media (prefers-color-scheme: dark){
+    body,.bg-outer{background:#d4e0c5 !important;}
+    .bg-mid{background-color:#f3ead0 !important;}
+    .title,.otp,.expiry{color:#0d3d2b !important;}
+    .desc,.expiry-label,.note{color:#55553f !important;}
+    .otp-cell{background-color:#faf5e5 !important;}
+    .expiry{background-color:#efe5c4 !important;}
+  }
+  [data-ogsc] .title,[data-ogsc] .otp,[data-ogsc] .expiry{color:#0d3d2b !important;}
+  [data-ogsc] .desc,[data-ogsc] .expiry-label,[data-ogsc] .note{color:#55553f !important;}
+  [data-ogsb] .bg-mid{background-color:#f3ead0 !important;}
+  [data-ogsb] .otp-cell{background-color:#faf5e5 !important;}
+  [data-ogsb] .expiry{background-color:#efe5c4 !important;}
+</style>
+</head>
+<body class="bg-outer" style="margin:0;padding:0;background:#d4e0c5;">
+
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">
+  Kode OTP Printy Anda. Gunakan sebelum masa berlakunya habis.
+</div>
+
+<table class="bg-outer" width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" bgcolor="#d4e0c5"
+       style="background:#d4e0c5;background-image:linear-gradient(#d4e0c5,#d4e0c5);">
+<tr><td align="center">
+
+  <table width="600" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%;max-width:600px;">
+
+    <!-- TOP: bingkai buku, pita, logo, daun (gambar) -->
+    <tr>
+      <td style="font-size:0;line-height:0;">
+        <img src="{{.AssetURL}}/otp-top.webp" width="600" alt="Printy - Cetak Semua Ide, Jadi Nyata"
+             style="display:block;width:100%;max-width:600px;height:auto;">
+      </td>
+    </tr>
+
+    <!-- MIDDLE: teks dinamis -->
+    <tr>
+      <td class="bg-mid" bgcolor="#f3ead0" background="{{.AssetURL}}/otp-mid.webp"
+          style="background-color:#f3ead0;background-image:url('{{.AssetURL}}/otp-mid.webp');background-repeat:repeat-y;background-size:100% auto;background-position:top center;">
+
+        <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:72%;margin-left:18%;">
+          <tr>
+            <td align="center" style="padding:0 0 10px;background-image:linear-gradient(rgba(243,234,208,0),rgba(243,234,208,0));">
+
+              <h1 class="title" style="margin:0 0 14px;font-family:Georgia,'Times New Roman',serif;font-size:44px;line-height:50px;font-weight:bold;color:#0d3d2b;text-shadow:0 1px 0 rgba(255,255,255,0.75),0 2px 3px rgba(80,60,20,0.14);">
+                Kode OTP
+              </h1>
+
+              <p class="desc" style="margin:0 auto 26px;max-width:360px;font-family:Georgia,'Times New Roman',serif;font-size:18px;line-height:28px;color:#55553f;text-shadow:0 1px 0 rgba(255,255,255,0.55);">
+                Halo {{.Name}}, gunakan kode di bawah ini untuk melanjutkan proses reset password akun Anda.
+              </p>
+
+              <!-- OTP BOX: selip kertas timbul (border-collapse:separate supaya sudut membulat) -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"
+                     style="border-collapse:separate;border:1px solid #cdbf93;border-radius:14px;background:#faf5e5;box-shadow:0 1px 0 rgba(255,255,255,0.7),0 8px 16px -8px rgba(90,70,20,0.38),0 2px 4px rgba(90,70,20,0.10);">
+                <tr>
+                  <td class="otp-cell" align="center" bgcolor="#faf5e5"
+                      style="padding:8px;background-color:#faf5e5;background-image:linear-gradient(#fffdf4,#f5edd2);border-radius:13px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.95),inset 0 -3px 8px rgba(150,125,60,0.14);">
+                    <div class="otp-dash" style="border:1px dashed #c9bb8e;border-radius:9px;padding:12px 4px;">
+                      <div class="otp" style="font-family:Georgia,'Times New Roman',serif;font-size:44px;line-height:54px;font-weight:bold;letter-spacing:12px;color:#0d3d2b;white-space:nowrap;text-shadow:0 1px 0 rgba(255,255,255,0.9),0 2px 3px rgba(80,60,20,0.18);">
+                        {{.OTP}}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- EXPIRY -->
+              <div class="expiry-label expiry-wrap" style="margin-top:26px;font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:25px;color:#55553f;text-shadow:0 1px 0 rgba(255,255,255,0.55);">
+                &#9719;&nbsp; Kode ini berlaku hingga:
+              </div>
+              <div style="margin-top:8px;">
+                <span class="expiry" style="display:inline-block;padding:5px 16px;font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:26px;font-weight:bold;color:#0d3d2b;background-color:#efe5c4;background-image:linear-gradient(#f3ebd0,#eadfb8);border:1px solid #d6c99d;border-radius:999px;box-shadow:inset 0 1px 3px rgba(120,100,40,0.22),0 1px 0 rgba(255,255,255,0.7);text-shadow:0 1px 0 rgba(255,255,255,0.7);">
+                  {{.ExpiredAt}}
+                </span>
+              </div>
+
+              <!-- DIVIDER: garis ukiran (gelap di atas, highlight di bawah) -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+                <tr>
+                  <td class="div-pad" style="padding:24px 0 18px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+                      <tr>
+                        <td width="45%" style="border-top:1px solid #b9ad86;border-bottom:1px solid rgba(255,255,255,0.75);font-size:0;line-height:0;">&nbsp;</td>
+                        <td class="star" width="10%" align="center" style="font-size:20px;line-height:20px;color:#8b8966;text-shadow:0 1px 0 rgba(255,255,255,0.8);">&#10022;</td>
+                        <td width="45%" style="border-top:1px solid #b9ad86;border-bottom:1px solid rgba(255,255,255,0.75);font-size:0;line-height:0;">&nbsp;</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- NOTE -->
+              <p class="note" style="margin:0 auto;max-width:360px;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:24px;font-style:italic;color:#55553f;text-shadow:0 1px 0 rgba(255,255,255,0.55);">
+                Jangan bagikan kode ini kepada siapa pun, termasuk pihak Printy.<br>
+                Jika Anda tidak merasa meminta kode ini, abaikan email ini saja.
+              </p>
+
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+
+    <!-- BOTTOM: divider, slogan, daun, footer (gambar) -->
+    <tr>
+      <td style="font-size:0;line-height:0;">
+        <img src="{{.AssetURL}}/otp-bottom.webp" width="600" alt="Good Prints Create Brighter Days. © Printy. Email otomatis, mohon tidak membalas."
+             style="display:block;width:100%;max-width:600px;height:auto;">
+      </td>
+    </tr>
+
+  </table>
+
+</td></tr>
+</table>
+
+</body>
+</html>

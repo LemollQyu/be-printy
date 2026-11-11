@@ -16,4 +16,10 @@ func SetupRoutes(router *gin.Engine, printyHandler handler.PrintyHandler) {
 	groupV1.GET("/test", printyHandler.Test)
 	groupV1.POST("/register", printyHandler.Register)
 	groupV1.POST("/resend-verification", printyHandler.SendTokenVerifyAccount)
+
+	groupV1.POST("/forgot-password", printyHandler.ForgotPassword)
+	groupV1.POST("/resend-otp", printyHandler.ResendOTP)
+	groupV1.POST("/check-otp", printyHandler.CheckOTP)
+	groupV1.POST("/reset-password", printyHandler.ResetPassword)
+
 }
