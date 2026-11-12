@@ -112,6 +112,7 @@ func (h *PrintyHandler) SendTokenVerifyAccount(c *gin.Context) {
 // login
 func (h *PrintyHandler) Login(c *gin.Context) {
 	var param models.LoginParameter
+
 	if err := c.ShouldBindJSON(&param); err != nil {
 		log.Logger.Info("Invalid parameter: ", err.Error())
 		helper.BadRequest(c, "Invalid request body", nil)
@@ -133,11 +134,9 @@ func (h *PrintyHandler) Login(c *gin.Context) {
 			helper.BadRequest(c, err.Error(), nil)
 		default:
 			log.Logger.Error("printyHandler: Login ", err.Error())
-			helper.InternalError(c)
 		}
 		return
 	}
-
 	helper.OK(c, "success", gin.H{"token": token})
 }
 
