@@ -12,10 +12,12 @@ var (
 )
 
 var (
+	ErrAccountNotVerified = errors.New("User not verified")
+	ErrUnauthorized       = errors.New("Unauthorized")
 	ErrInvalidToken       = errors.New("Token verify invalid")
 	ErrTokenUsed          = errors.New("Token is used")
 	ErrTokenExpired       = errors.New("Token is expired")
+	ErrInvalidOTP         = errors.New("invalid or expired otp")
+	ErrTooManyAttempts    = errors.New("too many otp attempts")
 	ErrAccountIsVerified  = errors.New("User is verified")
-	ErrAccountNotVerified = errors.New("User not verified")
-	ErrUnauthorized       = errors.New("Unauthorized")
 )

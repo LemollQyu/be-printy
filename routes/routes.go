@@ -26,4 +26,11 @@ func SetupRoutes(router *gin.Engine, printyHandler handler.PrintyHandler) {
 	{
 		protected.GET("/me", printyHandler.Me)
 	}
+
+	// endpoint reset password
+	groupV1.POST("/forgot-password", printyHandler.ForgotPassword)
+	groupV1.POST("/resend-otp", printyHandler.ResendOTP)
+	groupV1.POST("/check-otp", printyHandler.CheckOTP)
+	groupV1.POST("/reset-password", printyHandler.ResetPassword)
+
 }

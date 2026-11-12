@@ -65,3 +65,40 @@ func BuildVerifyAccountEmail(name, baseURL, rawToken string) (*EmailContent, err
 		Body:    body,
 	}, nil
 }
+
+type otpData struct {
+	Name      string
+	OTP       string
+	ExpiredAt string
+	AssetURL  string
+}
+
+// BuildOTPEmail menghasilkan subject + body email OTP.
+// expiredAt dihitung di usecase, jadi nilai di DB dan teks di email selalu sama.
+func BuildOTPEmail(name, baseURL, code string, expiredAt time.Time) (*EmailContent, error) {
+	body, err := renderEmail("otp.html", otpData{
+		Name:      name,
+		OTP:       code,
+		ExpiredAt: formatExpiredAt(expiredAt),
+		AssetURL:  strings.TrimRight(baseURL, "/") + "/public/email",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &EmailContent{
+		Subject: "Kode OTP Printy",
+		Body:    body,
+	}, nil
+}
+
+var bulanID = [...]string{"Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"}
+
+var wib = time.FixedZone("WIB", 7*60*60)
+
+// formatExpiredAt memformat waktu ke WIB, contoh: "09 Nov 2026, 23:07 WIB"
+func formatExpiredAt(t time.Time) string {
+	t = t.In(wib)
+	return fmt.Sprintf("%02d %s %d, %s WIB",
+		t.Day(), bulanID[t.Month()-1], t.Year(), t.Format("15:04"))
+}
