@@ -17,6 +17,7 @@ func SetupRoutes(router *gin.Engine, printyHandler handler.PrintyHandler) {
 	groupV1.POST("/register", printyHandler.Register)
 	groupV1.POST("/resend-verification", printyHandler.SendTokenVerifyAccount)
 
+	// endpoint reset password
 	groupV1.POST("/forgot-password", printyHandler.ForgotPassword)
 	groupV1.POST("/resend-otp", printyHandler.ResendOTP)
 	groupV1.POST("/check-otp", printyHandler.CheckOTP)
