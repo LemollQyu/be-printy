@@ -18,10 +18,12 @@ const (
 	forgotPasswordOTPType = "forgot_password"
 	otpResendCooldown     = 60 * time.Second
 	maxOTPPerHour         = 5
+
+	// dikembalikan ke client; nilainya sama untuk semua kasus
+	otpExpiresInSeconds = int(forgotPasswordOTPTTL / time.Second)
 )
 
-// logika bersama untuk ForgotPassword dan ResendOTP
-func (uc *PrintyUsecase) sendForgotPasswordOTP(ctx context.Context, email string) error {
+func (uc *PrintyUsecase) sendForgotPasswordOTP(ctx context.Context, email string) (int, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 
 	// 1. cari user
@@ -30,81 +32,80 @@ func (uc *PrintyUsecase) sendForgotPasswordOTP(ctx context.Context, email string
 		log.Logger.WithFields(logrus.Fields{
 			"email": email,
 		}).Errorf("uc.PrintyService.GetUserByEmail got error %v", err)
-		return err
+		return 0, err
 	}
 
-	// user tidak ada -> tetap balas sukses supaya email tidak bisa di-enumerate
+	// user tidak ada -> tetap sukses dengan expires_in yang sama
 	if user == nil {
-		return nil
+		return otpExpiresInSeconds, nil
 	}
 
-	// 2. cooldown: OTP terakhir dibuat < 60 detik lalu -> abaikan (response tetap sukses)
+	// 2. cooldown
 	latest, err := uc.PrintyService.GetLatestOtp(ctx, user.ID, forgotPasswordOTPType)
 	if err != nil {
 		log.Logger.WithFields(logrus.Fields{
 			"UserID": user.ID,
 		}).Errorf("uc.PrintyService.GetLatestOtp %v", err)
-		return err
+		return 0, err
 	}
 	if latest != nil && time.Since(latest.CreatedAt) < otpResendCooldown {
-		return nil
+		return otpExpiresInSeconds, nil
 	}
 
-	// 3. batas per jam: cegah spam email dan reset counter attempts berulang-ulang
+	// 3. batas per jam
 	total, err := uc.PrintyService.CountOtpsSince(ctx, user.ID, forgotPasswordOTPType, time.Now().Add(-time.Hour))
 	if err != nil {
 		log.Logger.WithFields(logrus.Fields{
 			"UserID": user.ID,
 		}).Errorf("uc.PrintyService.CountOtpsSince %v", err)
-		return err
+		return 0, err
 	}
 	if total >= maxOTPPerHour {
-		return nil
+		return otpExpiresInSeconds, nil
 	}
 
-	// 4. matikan OTP lama yang belum dipakai (supaya hanya 1 OTP aktif)
+	// 4. matikan OTP lama
 	if err := uc.PrintyService.InvalidateOtps(ctx, user.ID, forgotPasswordOTPType); err != nil {
 		log.Logger.WithFields(logrus.Fields{
 			"ID":   user.ID,
 			"type": forgotPasswordOTPType,
 		}).Errorf("uc.PrintyService.InvalidateOtps %v", err)
-		return err
+		return 0, err
 	}
 
-	// 5. generate OTP (secret dari config, harus sama dengan yang dipakai CompareOTP)
-	rawOTP, hashOTP, err := helper.GenerateOTP("forgot_password")
+	// 5. generate OTP
+	rawOTP, hashOTP, err := helper.GenerateOTP(forgotPasswordOTPType)
 	if err != nil {
 		log.Logger.WithFields(logrus.Fields{
 			"type": forgotPasswordOTPType,
 		}).Errorf("helper.GenerateOTP %v", err)
-		return err
+		return 0, err
 	}
 
 	expiredAt := time.Now().Add(forgotPasswordOTPTTL)
 
-	// 6. simpan hash-nya
-	err = uc.PrintyService.InsertOtp(ctx, models.OTP{
+	// 6. simpan hash
+	if err := uc.PrintyService.InsertOtp(ctx, models.OTP{
 		UserID:      user.ID,
 		Type:        forgotPasswordOTPType,
 		OTPCodeHash: hashOTP,
 		ExpiredAt:   expiredAt,
-	})
-	if err != nil {
+	}); err != nil {
 		log.Logger.WithFields(logrus.Fields{
 			"type":   forgotPasswordOTPType,
 			"UserID": user.ID,
 		}).Errorf("uc.PrintyService.InsertOtp %v", err)
-		return err
+		return 0, err
 	}
 
-	// 7. kirim raw OTP ke email
+	// 7. kirim email
 	content, err := utils.BuildOTPEmail(user.FullName, uc.ConfigApp.BaseUrl, rawOTP, expiredAt)
 	if err != nil {
 		log.Logger.WithFields(logrus.Fields{
 			"type":   forgotPasswordOTPType,
 			"UserID": user.ID,
 		}).Errorf("utils.BuildOTPEmail %v", err)
-		return err
+		return 0, err
 	}
 
 	if err := uc.PrintyService.SendEmail(ctx, models.EmailParameter{
@@ -116,19 +117,19 @@ func (uc *PrintyUsecase) sendForgotPasswordOTP(ctx context.Context, email string
 			"type":   forgotPasswordOTPType,
 			"UserID": user.ID,
 		}).Errorf("uc.PrintyService.SendEmail %v", err)
-		return err
+		return 0, err
 	}
 
-	return nil
+	return otpExpiresInSeconds, nil
 }
 
 // usecase Forgot password
-func (uc *PrintyUsecase) ForgotPassword(ctx context.Context, email string) error {
+func (uc *PrintyUsecase) ForgotPassword(ctx context.Context, email string) (int, error) {
 	return uc.sendForgotPasswordOTP(ctx, email)
 }
 
 // usecase Resend OTP
-func (uc *PrintyUsecase) ResendOTP(ctx context.Context, email string) error {
+func (uc *PrintyUsecase) ResendOTP(ctx context.Context, email string) (int, error) {
 	return uc.sendForgotPasswordOTP(ctx, email)
 }
 

@@ -20,13 +20,16 @@ func (h *PrintyHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.PrintyUsecase.ForgotPassword(c, param.Email); err != nil {
+	expiresIn, err := h.PrintyUsecase.ForgotPassword(c, param.Email)
+	if err != nil {
 		log.Logger.Error("printyHandler: ForgotPassword ", err.Error())
 		helper.InternalError(c)
 		return
 	}
 
-	helper.OK(c, "If the email is registered, an OTP code has been sent", nil)
+	helper.OK(c, "If the email is registered, an OTP code has been sent", gin.H{
+		"expires_in": expiresIn, // detik
+	})
 }
 
 func (h *PrintyHandler) ResendOTP(c *gin.Context) {
@@ -38,13 +41,16 @@ func (h *PrintyHandler) ResendOTP(c *gin.Context) {
 		return
 	}
 
-	if err := h.PrintyUsecase.ResendOTP(c, param.Email); err != nil {
+	expiresIn, err := h.PrintyUsecase.ResendOTP(c, param.Email)
+	if err != nil {
 		log.Logger.Error("printyHandler: ResendOTP ", err.Error())
 		helper.InternalError(c)
 		return
 	}
 
-	helper.OK(c, "If the email is registered, an OTP code has been sent", nil)
+	helper.OK(c, "If the email is registered, an OTP code has been sent", gin.H{
+		"expires_in": expiresIn,
+	})
 }
 
 func (h *PrintyHandler) CheckOTP(c *gin.Context) {

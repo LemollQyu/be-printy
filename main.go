@@ -10,6 +10,7 @@ import (
 	"github.com/LemollQyu/be-printy/app/usecase"
 	"github.com/LemollQyu/be-printy/config"
 	"github.com/LemollQyu/be-printy/infrastructure/log"
+	"github.com/LemollQyu/be-printy/middleware"
 	"github.com/LemollQyu/be-printy/routes"
 	"github.com/gin-gonic/gin"
 )
@@ -38,7 +39,7 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
-
+	router.Use(middleware.CORS([]string{"http://localhost:3000", cfg.App.BaseUrl}))
 	router.Static("/public", "./public")
 
 	routes.SetupRoutes(router, *printyHandler)
